@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merry Christmas - 完美艺术版</title>
+    <!-- 艺术字体引用 -->
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            width: 100%; height: 100%; overflow: hidden; 
+            background-color: #010206; font-family: 'Noto Serif SC', serif;
+        }
+
+        /* 引导界面 */
+        #setup {
+            position: fixed; inset: 0; 
+            background: radial-gradient(circle at center, #0a1020 0%, #000 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000; transition: all 0.8s ease;
+        }
+        #setup.hide { opacity: 0; pointer-events: none; transform: translateY(-20px); }
+        #setup h2 { color: #fff; font-family: 'Pinyon Script', cursive; font-size: 3.5rem; margin-bottom: 30px; }
+        .input-box { border-bottom: 1px solid rgba(255,255,255,0.4); margin-bottom: 40px; }
+        #userName { background: none; border: none; color: #fff; font-size: 1.5rem; padding: 10px 20px; outline: none; text-align: center; width: 300px; }
+        #setup button { background: none; border: 1px solid #fff; color: #fff; padding: 12px 50px; cursor: pointer; border-radius: 50px; transition: 0.4s; }
+        #setup button:hover { background: #fff; color: #000; box-shadow: 0 0 30px rgba(255,255,255,0.4); }
+
+        /* 主内容 */
+        #container { position: relative; width: 100%; height: 100%; display: none; }
+        #container.show { display: block; }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* 艺术文字布局 */
+        #overlay-text {
+            position: absolute; right: 8%; top: 55%;
+            transform: translateY(-50%); color: white;
+            text-align: left; pointer-events: none;
+        }
+        .line-en { 
+            font-family: 'Pinyon Script', cursive; font-size: 6.8rem; 
+            background: linear-gradient(to bottom, #fff 40%, #a0e0ff 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.4));
+        }
+        .line-to { font-size: 2.6rem; margin-bottom: 15px; font-family: 'Ma Shan Zheng', cursive; opacity: 0.95; }
+        .line-msg { font-size: 1.8rem; font-family: 'Ma Shan Zheng', cursive; color: #e0f7ff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+    </style>
+</head>
+<body>
+
+    <div id="setup">
+        <h2>Christmas 2025</h2>
+        <div class="input-box">
+            <input type="text" id="userName" placeholder="Enter Name..." autocomplete="off">
+        </div>
+        <button onclick="launch()">CONFIRM</button>
+    </div>
+
+    <div id="container">
+        <canvas id="canvas"></canvas>
+        <div id="overlay-text">
+            <div class="line-en">Merry Christmas</div>
+            <div class="line-to" id="txtTo"></div>
+            <div class="line-msg" id="txtMsg"></div>
+        </div>
+    </div>
+
+<script>
+    const messages = ["愿你被世界温柔相待", "柳含知祝你期末顺利", "即使不是圣诞也要快乐"];
+    let canvas, ctx, width, height, particles = [];
+
+    function launch() {
+        const name = document.getElementById('userName').value || "Someone Special";
+        document.getElementById('txtTo').innerText = "To: " + name;
+        document.getElementById('txtMsg').innerText = messages[Math.floor(Math.random() * messages.length)];
+        document.getElementById('setup').classList.add('hide');
+        document.getElementById('container').classList.add('show');
+        setTimeout(init, 400);
+    }
+
+    function init() {
+        canvas = document.getElementById('canvas');
+        ctx = canvas.getContext('2d');
+        resize();
+        window.addEventListener('resize', resize);
+        createScene();
+        animate();
+    }
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+        constructor(tx, ty, tz, color, size, type) {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.z = Math.random() * 400 - 200;
+            this.tx = tx; this.ty = ty; this.tz = tz;
+            this.color = color;
+            this.baseSize = size;
+            this.size = size;
+            this.type = type; // 0:tree, 1:heart, 2:ground
+            this.vx = (Math.random() - 0.5) * 4;
+            this.vy = (Math.random() - 0.5) * 4;
+            this.vz = (Math.random() - 0.5) * 4;
+            this.phase = Math.random() * Math.PI * 2;
+            this.jitterSpeed = 0.04 + Math.random() * 0.06;
+        }
+
+        update() {
+            this.phase += this.jitterSpeed;
+            let dx = this.tx - this.x;
+            let dy = this.ty - this.y;
+            let dz = this.tz - this.z;
+            let dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            let force = Math.min(dist * 0.02, 1.4);
+            
+            this.vx = this.vx * 0.9 + (dx / dist) * force;
+            this.vy = this.vy * 0.9 + (dy / dist) * force;
+            this.vz = this.vz * 0.9 + (dz / dist) * force;
+
+            this.x += this.vx + Math.sin(this.phase) * 0.5; 
+            this.y += this.vy + Math.cos(this.phase) * 0.5;
+            this.z += this.vz;
+            this.size = this.baseSize * (0.85 + Math.sin(this.phase) * 0.25);
+        }
+
+        draw() {
+            let s = 1000 / (1000 + this.z);
+            let x2d = (this.x - width/2) * s + width/2;
+            let y2d = (this.y - height/2) * s + height/2;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(x2d, y2d, this.size * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function createScene() {
+        const cx = width * 0.35;
+        const cy = height * 0.85;
+
+        // 1. 圣诞树：层叠灵动圆锥
+        const numLayers = 5;
+        for (let i = 0; i < 4000; i++) {
+            let h = Math.random() * 520;
+            let p = h / 520;
+            let layerProgress = (h % (520 / numLayers)) / (520 / numLayers);
+            let r = 220 * (1 - p) * (0.7 + 0.3 * (1 - layerProgress));
+            let angle = Math.random() * Math.PI * 2;
+            let color;
+            if (p < 0.22 && Math.random() > 0.45) { // 底部多彩
+                const ornaments = ['#ff4d4d', '#ffd700', '#ff00ff', '#00ffcc', '#00ff00', '#ffffff'];
+                color = ornaments[Math.floor(Math.random() * ornaments.length)];
+            } else {
+                color = ['#ffffff', '#a0e0ff', '#00d4ff', '#e0ffff'][Math.floor(Math.random()*4)];
+            }
+            particles.push(new Particle(cx + Math.cos(angle)*r, cy - h, Math.sin(angle)*r, color, Math.random()*1.5+0.4, 0));
+        }
+
+        // 2. 顶部：实心纯红爱心 (填充逻辑)
+        // 通过随机缩放系数 fillScale 填充心形内部
+        for (let i = 0; i < 600; i++) {
+            let t = Math.random() * Math.PI * 2;
+            let fillScale = Math.sqrt(Math.random()); // 使用开方分布使填充更均匀
+            let hx = 16 * Math.pow(Math.sin(t), 3) * fillScale;
+            let hy = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * fillScale;
+            particles.push(new Particle(
+                cx + hx * 2.8, 
+                cy - 565 + hy * 2.8, 
+                Math.random() * 15 - 7.5,
+                '#ff0000', // 纯正红
+                Math.random() * 2 + 1, 1
+            ));
+        }
+
+        // 3. 地面螺旋星轨
+        for (let i = 0; i < 1500; i++) {
+            let angle = Math.random() * Math.PI * 10;
+            let r = angle * 16.5;
+            if (r > 530) continue;
+            particles.push(new Particle(cx + Math.cos(angle)*r, cy + 25 + (Math.random()*8), Math.sin(angle)*r, `rgba(255,255,255,${Math.random()*0.3+0.1})`, 1.2, 2));
+        }
+    }
+
+    function animate() {
+        ctx.fillStyle = 'rgba(1, 2, 8, 0.2)';
+        ctx.fillRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'lighter';
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        ctx.globalCompositeOperation = 'source-over';
+        requestAnimationFrame(animate);
+    }
+</script>
+</body>
+</html>
